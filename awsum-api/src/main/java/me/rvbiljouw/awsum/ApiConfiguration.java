@@ -37,13 +37,13 @@ import java.net.URISyntaxException;
  * @author rvbiljouw
  */
 @Configuration
-@PropertySource("classpath:api.properties")
+@PropertySource(value = "classpath:api.properties", ignoreResourceNotFound = true)
 public class ApiConfiguration {
-    private @Value("${spotify.clientId}")
+    private @Value("${spotify.clientId:undefined}")
     String spotifyClientId;
-    private @Value("${spotify.clientSecret}")
+    private @Value("${spotify.clientSecret:undefined}")
     String spotifyClientSecret;
-    private @Value("${spotify.redirectURI}")
+    private @Value("${spotify.redirectURI:undefined}")
     String spotifyRedirectUri;
 
     @Bean(name = "serverSpotifyClient")
