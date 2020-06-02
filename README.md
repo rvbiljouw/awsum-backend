@@ -7,6 +7,8 @@ This project consists of multiple modules that together make up the backend for 
 - [awsum-api](awsum-api/) - Provides a HTTP API for awsum.app
 - [awsum-data](awsum-data/) - Provides a common data access layer that can be used across the project
 - [awsum-spotify](awsum-spotify/) Provides a Facade-like interface to communicate with the Spotify API
+- [awsum-server](awsum-server/) Provides a STOMP-based WebSocket server for handling groups in realtime
+- [awsum-agent](awsum-agent/) A background application that manages groups' queues and listeners' Spotify states.
 
 ## Usage
 
