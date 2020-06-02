@@ -27,6 +27,7 @@ import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials;
 import com.wrapper.spotify.model_objects.specification.User;
 import com.wrapper.spotify.requests.authorization.authorization_code.AuthorizationCodeRequest;
+import me.rvbiljouw.awsum.spotify.api.SpotifySongApi;
 import me.rvbiljouw.awsum.spotify.exception.SpotifyException;
 import me.rvbiljouw.awsum.spotify.model.SpotifyToken;
 
@@ -37,6 +38,7 @@ import java.net.URI;
  */
 public class SpotifyClient {
     private final SpotifyApi api;
+    private final SpotifySongApi songs;
 
     SpotifyClient(String clientId, String clientSecret, URI redirectURI, SpotifyToken token) {
         this.api = SpotifyApi.builder()
@@ -48,6 +50,7 @@ public class SpotifyClient {
             this.api.setAccessToken(token.getAccessToken());
             this.api.setRefreshToken(token.getRefreshToken());
         }
+        this.songs = new SpotifySongApi(this, api);
     }
 
     public String getCurrentUserId() throws SpotifyException {
@@ -86,6 +89,10 @@ public class SpotifyClient {
         } catch (Throwable t) {
             throw new SpotifyException("Couldn't retrieve auth/refresh token.", t);
         }
+    }
+
+    public SpotifySongApi getSongs() {
+        return songs;
     }
 
     private boolean isUserScoped() {

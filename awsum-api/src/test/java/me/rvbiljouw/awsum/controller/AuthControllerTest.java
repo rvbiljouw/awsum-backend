@@ -19,19 +19,19 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.util.AssertionErrors.assertEquals;
-import static org.springframework.test.util.AssertionErrors.assertTrue;
+import static org.springframework.test.util.AssertionErrors.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(SpringExtension.class)
 @AutoConfigureMockMvc
@@ -137,36 +137,37 @@ public class AuthControllerTest {
 
     @Test
     void callbackCreatesUser() throws Exception {
-        MvcResult result = callCallback();
-        assertTrue("Response does not contain a token.",
-                result.getResponse().getContentAsString().contains("\"token\":"));
-    }
-
-    private MvcResult callCallback() throws Exception {
-        return mvc.perform(get("/api/v1/callback").param("code", "auth-code"))
-                .andDo(print())
-                .andExpect(status().is2xxSuccessful())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andReturn();
+        String accountId = callCallback().getResponse().getHeader("X-Account-Id");
+        assertNotNull("No user was created", accountId);
     }
 
     @Test
     void callbackUpdatesUserIfExists() throws Exception {
         // repeated calls should update the updatedAt timestamp in the bean!
-        final String responseOne = callCallback().getResponse().getContentAsString();
-        final SimpleAuthTokenResponse tokenOne = responseToObject(responseOne, SimpleAuthTokenResponse.class);
+        final MockHttpServletResponse responseOne = callCallback().getResponse();
+        final String tokenOne = responseOne.getHeader("X-Auth-Token");
+        final String accountOne = responseOne.getHeader("X-Account-Id");
 
-        final String responseTwo = callCallback().getResponse().getContentAsString();
-        final SimpleAuthTokenResponse tokenTwo = responseToObject(responseTwo, SimpleAuthTokenResponse.class);
+        final MockHttpServletResponse responseTwo = callCallback().getResponse();
+        final String tokenTwo = responseTwo.getHeader("X-Auth-Token");
+        final String accountTwo = responseTwo.getHeader("X-Account-Id");
 
-        assertEquals("Account was not updated after creation.",
-                tokenTwo.getAccount().getId(),
-                tokenOne.getAccount().getId());
+        assertNotEquals("Token didn't change between requests", tokenOne, tokenTwo);
+        assertEquals("Account was not updated after creation.", accountOne, accountTwo);
+    }
+
+    private MvcResult callCallback() throws Exception {
+        return mvc.perform(get("/api/v1/callback").param("code", "auth-code"))
+                .andDo(print())
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/?token=*"))
+                .andReturn();
     }
 
     private <T> T responseToObject(String responseString, Class<T> type) throws JsonProcessingException {
         return messageConverter.getObjectMapper().readValue(responseString, type);
     }
+
 
     private SpotifyToken makeSpotifyToken() {
         return new SpotifyToken("access-token", "refresh-token");

@@ -11,6 +11,8 @@
         <module>awsum-data</module>
         <module>awsum-api</module>
         <module>awsum-spotify</module>
+        <module>awsum-server</module>
+        <module>awsum-agent</module>
     </modules>
     <packaging>pom</packaging>
 

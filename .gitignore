@@ -5,6 +5,7 @@ target/
 
 # Files
 api.properties
+server.properties
 *.class
 *.log
 *.jar

@@ -41,6 +41,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
 
 import static me.rvbiljouw.awsum.util.BindingUtils.bindingResultToMap;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 /**
  * Controller for {@link UserGroup}-related functionality
@@ -93,6 +94,28 @@ public class GroupController {
     }
 
     /**
+     * Retrieves a group by ID
+     *
+     * @param user    the logged in user
+     * @param groupId the group id
+     * @return simple group
+     * @throws ApiException if the group doesn't exist or we don't have permission
+     */
+    @RequestMapping(value = "/api/v1/groups/{id}", method = RequestMethod.GET)
+    public SimpleUserGroupResponse getGroupById(
+            AuthenticatedUser user,
+            @PathVariable("id") Long groupId) throws ApiException {
+        final Optional<UserGroup> groupById = userGroupRepository.findById(groupId);
+        final UserAccount userAccount = (UserAccount) user.getPrincipal();
+
+        final ApiException groupNotFound = new ApiException(NOT_FOUND, "No group exists for ID: " + groupId);
+        return groupById
+                .filter(it -> userGroupService.checkMembership(userAccount, it))
+                .map(SimpleUserGroupResponse::new)
+                .orElseThrow(() -> groupNotFound);
+    }
+
+    /**
      * Create a new {@link UserGroup} owned by the currently logged in {@link UserAccount}
      *
      * @param request       the create request body
@@ -132,7 +155,7 @@ public class GroupController {
             AuthenticatedUser user) throws ApiException {
         final Optional<UserGroup> groupByCode = userGroupRepository.findByCode(code);
         if (!groupByCode.isPresent()) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "No group exists for code: " + code);
+            throw new ApiException(NOT_FOUND, "No group exists for code: " + code);
         }
 
         final UserAccount account = (UserAccount) user.getPrincipal();
@@ -162,7 +185,7 @@ public class GroupController {
             AuthenticatedUser user) throws ApiException {
         final Optional<UserGroup> groupById = userGroupRepository.findById(id);
         if (!groupById.isPresent()) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "No group exists for id: " + id);
+            throw new ApiException(NOT_FOUND, "No group exists for id: " + id);
         }
 
         final UserAccount account = (UserAccount) user.getPrincipal();

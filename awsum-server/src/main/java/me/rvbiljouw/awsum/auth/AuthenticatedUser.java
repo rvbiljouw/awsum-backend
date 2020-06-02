@@ -21,38 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package me.rvbiljouw.awsum.util;
+package me.rvbiljouw.awsum.auth;
 
-import com.google.common.collect.Multimaps;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static com.google.common.collect.Multimaps.index;
+import me.rvbiljouw.awsum.model.AuthToken;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 
 /**
- * A collection of binding-related utility methods
+ * A wrapper for an authentication token, allowing it
+ * to be inserted into request handlers in the controller(s).
  *
  * @author rvbiljouw
  */
-public final class BindingUtils {
+public class AuthenticatedUser extends PreAuthenticatedAuthenticationToken {
+    private final AuthToken authToken;
 
-    /**
-     * Maps a {@link BindingResult} to a Multimap containing a list of errors for every field name.
-     *
-     * @param result a binding result
-     * @return a multimap containing errors
-     */
-    public static Map<String, Collection<String>> bindingResultToMap(BindingResult result) {
-        List<FieldError> errors = result.getAllErrors().stream()
-                .filter(error -> error instanceof FieldError)
-                .map(error -> (FieldError) error)
-                .collect(Collectors.toList());
-        return Multimaps.transformEntries(index(errors, FieldError::getField), (k, v) -> v.getDefaultMessage()).asMap();
+    AuthenticatedUser(AuthToken authToken) {
+        super(authToken.getAccount(), authToken);
+        this.authToken = authToken;
+        setAuthenticated(true);
     }
 
+    @Override
+    public String getName() {
+        return String.valueOf(authToken.getAccount().getId());
+    }
 }

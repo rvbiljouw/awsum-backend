@@ -1,0 +1,21 @@
+version: '3.3'
+
+services:
+  awsum-db:
+    image: mysql:5.7.30
+    environment:
+      - MYSQL_USER=awsum
+      - MYSQL_PASSWORD=password
+      - MYSQL_DATABASE=awsum
+      - MYSQL_RANDOM_ROOT_PASSWORD=yes
+    ports:
+      - 3306:3306
+
+  awsum-queue:
+    image: rabbitmq:3.8.4-management
+    environment:
+      - RABBITMQ_DEFAULT_USER=awsum
+      - RABBITMQ_DEFAULT_PASS=password
+    ports:
+      - 5672:5672
+      - 15672:15672

@@ -34,6 +34,8 @@ import me.rvbiljouw.awsum.spotify.SpotifyClient;
 import me.rvbiljouw.awsum.spotify.exception.SpotifyException;
 import me.rvbiljouw.awsum.spotify.model.SpotifyToken;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,11 +48,15 @@ import java.io.IOException;
  *
  * @author rvbiljouw
  */
+@CrossOrigin
 @RestController
 public class AuthController {
     private final AuthTokenService authTokenService;
     private final UserAccountService userAccountService;
     private final SpotifyClient spotifyClient;
+
+    @Value("${frontend.afterTokenRedirect}")
+    private String afterTokenRedirect;
 
     public AuthController(
             AuthTokenService authTokenService,
@@ -90,18 +96,20 @@ public class AuthController {
      * and authentication token for the end-user, after which they're redirected to the appropriate frontend URL.
      *
      * @param code Spotify authorization code
-     * @return a simplified authentication token
      * @throws SpotifyException if any interaction with the Spotify API fails.
      */
     @RequestMapping("/api/v1/callback")
-    public SimpleAuthTokenResponse callback(@RequestParam String code) throws SpotifyException {
+    public void callback(@RequestParam String code, HttpServletResponse response) throws SpotifyException, IOException {
         final SpotifyToken token = spotifyClient.getTokenForAuthorizationCode(code);
         final SpotifyClient scopedClient = spotifyClient.deriveUserScopedWithToken(token);
         final String currentUserId = scopedClient.getCurrentUserId();
 
         final UserAccount account = userAccountService.createOrUpdateAccountWith(token, currentUserId);
         final AuthToken authToken = authTokenService.createAuthTokenFor(account);
-        return new SimpleAuthTokenResponse(authToken);
+
+        response.setHeader("X-Auth-Token", authToken.getToken());
+        response.setHeader("X-Account-Id", String.valueOf(authToken.getAccount().getId()));
+        response.sendRedirect(String.format(afterTokenRedirect, authToken.getToken()));
     }
 
 

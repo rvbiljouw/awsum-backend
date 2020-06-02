@@ -60,6 +60,7 @@ class GroupControllerTest {
 
     private UserAccount otherAccount;
     private UserAccount ourAccount;
+    private AuthToken otherAuthToken;
     private AuthToken ourAuthToken;
     private UserGroup ownerGroup;
     private UserGroup memberGroup;
@@ -74,6 +75,11 @@ class GroupControllerTest {
         otherAccount.setSpotifyAccessToken("test-access-token");
         userAccountRepository.save(otherAccount);
 
+        otherAuthToken = new AuthToken();
+        otherAuthToken.setAccount(otherAccount);
+        otherAuthToken.setToken("other-test-token");
+        authTokenRepository.save(otherAuthToken);
+
         ourAccount = new UserAccount();
         ourAccount.setDisplayName("our-id");
         ourAccount.setSpotifyId("our-id");
@@ -83,7 +89,7 @@ class GroupControllerTest {
 
         ourAuthToken = new AuthToken();
         ourAuthToken.setAccount(ourAccount);
-        ourAuthToken.setToken("test-token");
+        ourAuthToken.setToken("our-test-token");
         authTokenRepository.save(ourAuthToken);
 
         ownerGroup = new UserGroup();
@@ -313,6 +319,33 @@ class GroupControllerTest {
                 .header("Authorization", getAuthHeader()))
                 .andDo(print())
                 .andExpect(status().isForbidden())
+                .andReturn();
+    }
+
+    @Test
+    void getById() throws Exception {
+        mvc.perform(get("/api/v1/groups/" + ownerGroup.getId())
+                .header("Authorization", getAuthHeader()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+    }
+
+    @Test
+    void getByIdWithInvalidId() throws Exception {
+        mvc.perform(get("/api/v1/groups/" + Integer.MAX_VALUE)
+                .header("Authorization", getAuthHeader()))
+                .andDo(print())
+                .andExpect(status().isNotFound())
+                .andReturn();
+    }
+
+    @Test
+    void getByIdWithNoAccess() throws Exception {
+        mvc.perform(get("/api/v1/groups/" + ownerGroup.getId())
+                .header("Authorization", "Bearer " + otherAuthToken.getToken()))
+                .andDo(print())
+                .andExpect(status().isNotFound())
                 .andReturn();
     }
 
